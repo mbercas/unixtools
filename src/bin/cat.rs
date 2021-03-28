@@ -49,18 +49,25 @@ enum Rc {
 /**
  * A structure that defines how the output is formatted.
  */
+
+#[derive(Clone, Copy)]
 struct OutputFormatter {
     has_line_numbers: bool,
     only_non_blank: bool,
     squeze_blank: bool,
+    ignore_errors: bool,
 }
 
-fn main() {
-    // Initialize the output formatter
+/**
+ * Read the command line arguments and parse them into the OutputFormatter
+ * structure. Return input files in a vector.
+ */
+fn read_arguments() -> (OutputFormatter, Vec<String>) {
     let mut output_formatter = OutputFormatter {
         has_line_numbers: false,
         only_non_blank: false,
         squeze_blank: false,
+        ignore_errors: false,
     };
 
     let matches = App::new("rcat: cat clone command written in Rust")
@@ -89,6 +96,13 @@ fn main() {
                 .help("suppress repeated blank lines"),
         )
         .arg(
+            Arg::with_name("ignore-errors")
+                .short("i")
+                .long("ignore-errors")
+                .takes_value(false)
+                .help("Ignore errors that affect invidiual files"),
+        )
+        .arg(
             Arg::with_name("inputs")
                 .help("Input files")
                 .required(true)
@@ -96,10 +110,6 @@ fn main() {
                 .multiple(true),
         )
         .get_matches();
-
-    // This is only safe because the argument is required.
-    let inputs: Vec<_> = matches.values_of("inputs").unwrap().collect();
-    println!("Value of input: {:?}", inputs);
 
     if matches.is_present("number") {
         output_formatter.has_line_numbers = true;
@@ -114,36 +124,48 @@ fn main() {
         output_formatter.squeze_blank = true;
     }
 
-    // Verify that files in list of input files exist
+    if matches.is_present("ignore-errors") {
+        output_formatter.ignore_errors = true;
+    }
+
+    //(output_formatter, inputs)
+    // This is only safe because the argument is required.
+    let mut inputs = Vec::new();
+    let tmp: Vec<_> = matches.values_of("inputs").unwrap().collect();
+    for file_name in tmp {
+        inputs.push(file_name.to_string())
+    }
+
+    (output_formatter, inputs)
+}
+
+/**
+ * Check that the list of strings passed as an argument describes valid paths.
+ */
+fn get_file_paths(inputs: &Vec<String>, ignore_errors: bool) -> Result<Vec<&Path>, Rc> {
     let mut file_paths = Vec::new();
-    for file_name in &inputs {
-        let path = Path::new(file_name);
+    for file_name in inputs {
+        let path = Path::new(file_name.as_str());
         if !path.exists() {
             eprintln!("ERROR: file: `{}` does not exist", path.display());
-            process::exit(Rc::ErrorInvalidIinputFilePath as i32);
+            if !ignore_errors {
+                process::exit(Rc::ErrorInvalidIinputFilePath as i32);
+            }
         }
         file_paths.push(path);
     }
+    Ok(file_paths)
+}
 
-    // For every file verify that the  file descriptor can be opened
-    // we don't want to generate partial output if one of the files
-    // can not be opened.
-    //
-    // We could store the file descriptors in an array but does not
-    // make sense to have too many file descriptors open
-    for file_path in &file_paths {
-        let _ = match File::open(&file_path) {
-            Err(err_code) => {
-                eprintln!(
-                    "ERROR opening file `{}` for reading: {}",
-                    file_path.display(),
-                    err_code
-                );
-                process::exit(Rc::ErrorCannotOpenFileForReading as i32);
-            }
-            Ok(file) => file,
-        };
-    }
+fn main() {
+    let (output_formatter, inputs) = read_arguments();
+
+    let file_paths = match get_file_paths(&inputs, output_formatter.ignore_errors) {
+        Ok(file_paths) => file_paths,
+        Err(rc) => {
+            process::exit(rc as i32);
+        }
+    };
 
     // For every file read the contents
     let mut next_line_number = 0u32;
@@ -155,7 +177,11 @@ fn main() {
                     file_path.display(),
                     err_code
                 );
-                process::exit(Rc::ErrorCannotOpenFileForReading as i32);
+                if output_formatter.ignore_errors {
+                    continue;
+                } else {
+                    process::exit(Rc::ErrorCannotOpenFileForReading as i32);
+                }
             }
             Ok(file) => io::BufReader::new(file).lines(),
         };
