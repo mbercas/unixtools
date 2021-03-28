@@ -53,13 +53,6 @@ struct OutputFormatter {
     has_line_numbers: bool,
     only_non_blank: bool,
     squeze_blank: bool,
-    next_line_number: u32,
-}
-
-impl OutputFormatter {
-    fn increase_line_number(&mut self) {
-        self.next_line_number += 1;
-    }
 }
 
 fn main() {
@@ -68,7 +61,6 @@ fn main() {
         has_line_numbers: false,
         only_non_blank: false,
         squeze_blank: false,
-        next_line_number: 0,
     };
 
     let matches = App::new("rcat: cat clone command written in Rust")
@@ -154,6 +146,7 @@ fn main() {
     }
 
     // For every file read the contents
+    let mut next_line_number = 0u32;
     for file_path in &file_paths {
         let lines = match File::open(&file_path) {
             Err(err_code) => {
@@ -172,7 +165,7 @@ fn main() {
                 let is_blank = ok_line.trim() == "";
 
                 if !is_blank | (is_blank & !output_formatter.only_non_blank) {
-                    output_formatter.increase_line_number();
+                    next_line_number += 1;
                 }
 
                 if output_formatter.squeze_blank & (prev_blank & is_blank) {
@@ -185,7 +178,7 @@ fn main() {
                     if is_blank & output_formatter.only_non_blank {
                         format!("{:<5}: ", String::from(""))
                     } else if output_formatter.has_line_numbers {
-                        format!("{:<5}: ", output_formatter.next_line_number)
+                        format!("{:<5}: ", next_line_number)
                     } else {
                         String::from("")
                     },
