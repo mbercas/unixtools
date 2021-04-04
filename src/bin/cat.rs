@@ -50,7 +50,6 @@ enum Rc {
  * A structure that defines how the output is formatted.
  */
 
-#[derive(Clone, Copy)]
 struct OutputFormatter {
     has_line_numbers: bool,
     only_non_blank: bool,
@@ -58,18 +57,23 @@ struct OutputFormatter {
     ignore_errors: bool,
 }
 
+impl OutputFormatter {
+    fn new() -> OutputFormatter {
+        OutputFormatter {
+            has_line_numbers: false,
+            only_non_blank: false,
+            squeze_blank: false,
+            ignore_errors: false,
+        }
+    }
+}
+
 /**
  * Read the command line arguments and parse them into the OutputFormatter
  * structure. Return input files in a vector.
  */
 fn read_arguments() -> (OutputFormatter, Vec<String>) {
-    let mut output_formatter = OutputFormatter {
-        has_line_numbers: false,
-        only_non_blank: false,
-        squeze_blank: false,
-        ignore_errors: false,
-    };
-
+    let mut output_formatter = OutputFormatter::new();
     let matches = App::new("rcat: cat clone command written in Rust")
         .version(VERSION)
         .author("Manuel Berrocal")

@@ -26,7 +26,6 @@ enum GrepError {
     InputFileNotFound = 2,
 }
 
-//#[derive(Clone, Copy)]
 struct OutputFormatter {
     ignore_match: bool,
     has_line_numbers: bool,
@@ -36,19 +35,24 @@ struct OutputFormatter {
     pattern: String,
 }
 
+impl OutputFormatter {
+    fn new() -> OutputFormatter {
+        OutputFormatter {
+            ignore_match: false,
+            has_line_numbers: false,
+            with_file_name: false,
+            only_file_names: false,
+            only_line_count: false,
+            pattern: String::from(""),
+        }
+    }
+}
 /**
  * Read the command line arguments and parse them into the OutputFormatter
  * structure. Return input files in a vector.
  */
 fn read_arguments() -> (OutputFormatter, Vec<String>) {
-    let mut output_formatter = OutputFormatter {
-        ignore_match: false,
-        has_line_numbers: false,
-        with_file_name: false,
-        only_file_names: false,
-        only_line_count: false,
-        pattern: String::from(""),
-    };
+    let mut output_formatter = OutputFormatter::new();
 
     let matches = App::new("grep: grep clone command written in Rust")
         .version(VERSION)
