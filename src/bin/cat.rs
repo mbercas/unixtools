@@ -19,6 +19,8 @@
 
 /*
  * References:
+ * - Writing CLI applications
+       - https://rust-cli.github.io/book/index.html
  * - Parsing command line:
  *     - https://docs.rs/clap/2.33.3/clap/
  *     - https://rust-lang-nursery.github.io/rust-cookbook/cli/arguments.html
@@ -32,19 +34,13 @@
 use clap::{App, Arg};
 
 use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::Path;
+use std::io::{self, BufRead, Write};
+//use std::path::Path;
 use std::process;
 
-const VERSION: &str = "ver. 0.0.1";
+extern crate toolslib;
 
-/**
- * Exit codes, note that Process::exit requires i32 as argument
- */
-enum Rc {
-    ErrorInvalidIinputFilePath = 1,
-    ErrorCannotOpenFileForReading = 2,
-}
+const VERSION: &str = "ver. 0.0.2";
 
 /**
  * A structure that defines how the output is formatted.
@@ -146,6 +142,7 @@ fn read_arguments() -> (OutputFormatter, Vec<String>) {
 /**
  * Check that the list of strings passed as an argument describes valid paths.
  */
+/*
 fn get_file_paths(inputs: &Vec<String>, ignore_errors: bool) -> Result<Vec<&Path>, Rc> {
     let mut file_paths = Vec::new();
     for file_name in inputs {
@@ -160,11 +157,11 @@ fn get_file_paths(inputs: &Vec<String>, ignore_errors: bool) -> Result<Vec<&Path
     }
     Ok(file_paths)
 }
-
+*/
 fn main() {
     let (output_formatter, inputs) = read_arguments();
 
-    let file_paths = match get_file_paths(&inputs, output_formatter.ignore_errors) {
+    let file_paths = match toolslib::get_file_paths(&inputs, output_formatter.ignore_errors) {
         Ok(file_paths) => file_paths,
         Err(rc) => {
             process::exit(rc as i32);
@@ -173,6 +170,8 @@ fn main() {
 
     // For every file read the contents
     let mut next_line_number = 0u32;
+    let stdout = io::stdout();
+    let mut handle = io::BufWriter::new(stdout);
     for file_path in &file_paths {
         let lines = match File::open(&file_path) {
             Err(err_code) => {
@@ -184,12 +183,13 @@ fn main() {
                 if output_formatter.ignore_errors {
                     continue;
                 } else {
-                    process::exit(Rc::ErrorCannotOpenFileForReading as i32);
+                    process::exit(toolslib::Rc::ErrorCannotOpenFileForReading as i32);
                 }
             }
             Ok(file) => io::BufReader::new(file).lines(),
         };
         let mut prev_blank = false;
+
         for line in lines {
             if let Ok(ok_line) = line {
                 let is_blank = ok_line.trim() == "";
@@ -203,7 +203,8 @@ fn main() {
                 }
                 prev_blank = is_blank;
 
-                println!(
+                match writeln!(
+                    handle,
                     "{}{}",
                     if is_blank & output_formatter.only_non_blank {
                         format!("{:<5}: ", String::from(""))
@@ -213,7 +214,20 @@ fn main() {
                         String::from("")
                     },
                     ok_line
-                )
+                ) {
+                    Ok(_) => {}
+                    Err(err) => {
+                        eprintln!("Error {}; when writing to stdout buffer.", err);
+                        process::exit(toolslib::Rc::ErrorWriteToStdout as i32);
+                    }
+                }
+            }
+            match handle.flush() {
+                Ok(_) => {}
+                Err(err) => {
+                    eprintln!("Error {}; when flushing to stdout.", err);
+                    process::exit(toolslib::Rc::ErrorWriteToStdout as i32);
+                }
             }
         }
     }

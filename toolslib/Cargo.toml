@@ -1,15 +1,9 @@
 [package]
-name = "unixtools"
+name = "toolslib"
 version = "0.1.0"
 authors = ["manuel <manuel@ezono.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[workspace]
-
-
 [dependencies]
-toolslib = { path = "toolslib" }
-clap = "2"
-regex = "1.4.5"
