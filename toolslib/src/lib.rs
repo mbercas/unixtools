@@ -4,6 +4,7 @@
 use std::path::Path;
 
 /// Exit codes, note that Process::exit requires i32 as argument
+#[derive(PartialEq, Debug)]
 pub enum Rc {
     /// Invalid file path error
     ErrorInvalidIinputFilePath = 1,
@@ -33,8 +34,9 @@ pub fn get_file_paths(inputs: &Vec<String>, ignore_errors: bool) -> Result<Vec<&
             if !ignore_errors {
                 return Err(Rc::ErrorInvalidIinputFilePath);
             }
+        } else {
+            file_paths.push(path);
         }
-        file_paths.push(path);
     }
     Ok(file_paths)
 }
