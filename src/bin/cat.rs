@@ -1,51 +1,40 @@
+///
+/// Title: Unix `cat` command implemented in Rust
+/// Author: Manuel Berrocal
+/// email: mbercas@gmail.com
+///
+///  # Description:
+///  The cat commands opens a file and writes its contents into the standard output.
+///
+///
+///  Exit error codes:
+///  * 1: invalid path to input file
+///  * 2: can not open input file for reading
 /*
- * Title: Unix `cat` command implemented in Rust
- * Author: Manuel Berrocal
- * email: mbercas@gmail.com
- *
- * Description:
- * The cat commands opens a file and writes its contents into the standard output.
- *
- *
- * Exit error codes:
- *   1: invalid path to input file
- *   2: can not open input file for reading
- */
-
-/*
- * This work is licensed under a Creative Commons Attribution 3.0 Unported License
- * http://creativecommons.org/licenses/by/3.0/deed.en_US"
- */
-
-/*
- * References:
- * - Writing CLI applications
-       - https://rust-cli.github.io/book/index.html
- * - Parsing command line:
- *     - https://docs.rs/clap/2.33.3/clap/
- *     - https://rust-lang-nursery.github.io/rust-cookbook/cli/arguments.html
- * - File::IO
- *     - https://doc.rust-lang.org/rust-by-example/std_misc/file/open.html
- *     - https://doc.rust-lang.org/rust-by-example/std_misc/file/read_lines.html
- * - Process Exit
- *      - https://stackoverflow.com/questions/21569718/how-do-i-exit-a-rust-program-early-from-outside-the-main-function
- *
- */
+* References:
+* - Writing CLI applications
+      - https://rust-cli.github.io/book/index.html
+* - Parsing command line:
+*     - https://docs.rs/clap/2.33.3/clap/
+*     - https://rust-lang-nursery.github.io/rust-cookbook/cli/arguments.html
+* - File::IO
+*     - https://doc.rust-lang.org/rust-by-example/std_misc/file/open.html
+*     - https://doc.rust-lang.org/rust-by-example/std_misc/file/read_lines.html
+* - Process Exit
+*      - https://stackoverflow.com/questions/21569718/how-do-i-exit-a-rust-program-early-from-outside-the-main-function
+*
+*/
 use clap::{App, Arg};
 
 use std::fs::File;
 use std::io::{self, BufRead, Write};
-//use std::path::Path;
 use std::process;
 
 extern crate toolslib;
 
 const VERSION: &str = "ver. 0.0.2";
 
-/**
- * A structure that defines how the output is formatted.
- */
-
+/// A structure that defines how the output is formatted.
 struct OutputFormatter {
     has_line_numbers: bool,
     only_non_blank: bool,
@@ -54,6 +43,7 @@ struct OutputFormatter {
 }
 
 impl OutputFormatter {
+    /// Initialize the OutputFormatter with defaults
     fn new() -> OutputFormatter {
         OutputFormatter {
             has_line_numbers: false,
@@ -64,10 +54,8 @@ impl OutputFormatter {
     }
 }
 
-/**
- * Read the command line arguments and parse them into the OutputFormatter
- * structure. Return input files in a vector.
- */
+/// Read the command line arguments and parse them into the OutputFormatter
+/// structure. Return input files in a vector.
 fn read_arguments() -> (OutputFormatter, Vec<String>) {
     let mut output_formatter = OutputFormatter::new();
     let matches = App::new("rcat: cat clone command written in Rust")
@@ -139,25 +127,6 @@ fn read_arguments() -> (OutputFormatter, Vec<String>) {
     (output_formatter, inputs)
 }
 
-/**
- * Check that the list of strings passed as an argument describes valid paths.
- */
-/*
-fn get_file_paths(inputs: &Vec<String>, ignore_errors: bool) -> Result<Vec<&Path>, Rc> {
-    let mut file_paths = Vec::new();
-    for file_name in inputs {
-        let path = Path::new(file_name.as_str());
-        if !path.exists() {
-            eprintln!("ERROR: file: `{}` does not exist", path.display());
-            if !ignore_errors {
-                process::exit(Rc::ErrorInvalidIinputFilePath as i32);
-            }
-        }
-        file_paths.push(path);
-    }
-    Ok(file_paths)
-}
-*/
 fn main() {
     let (output_formatter, inputs) = read_arguments();
 

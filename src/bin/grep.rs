@@ -1,3 +1,11 @@
+///
+/// A grep clone written in Rust
+/*
+ * https://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html
+ * https://livebook.manning.com/book/rust-in-action/chapter-2/v-16/371
+ * https://docs.rs/regex/1.4.5/regex/
+ *
+ */
 use clap::{App, Arg};
 use regex::Regex;
 use std::fs::File;
@@ -7,16 +15,7 @@ use std::io::BufReader;
 use std::process;
 
 /**
- *  A grep clone written in Rust
  *
- * https://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html
- * https://livebook.manning.com/book/rust-in-action/chapter-2/v-16/371
- * https://docs.rs/regex/1.4.5/regex/
- *
- */
-
-/**
- * A structure that defines how the output is formatted.
  */
 
 const VERSION: &str = "ver. 0.0.1";
@@ -26,6 +25,7 @@ enum GrepError {
     InputFileNotFound = 2,
 }
 
+// A structure that defines how the output is formatted.
 struct OutputFormatter {
     ignore_match: bool,
     has_line_numbers: bool,
@@ -36,24 +36,22 @@ struct OutputFormatter {
 }
 
 impl OutputFormatter {
-    fn new() -> OutputFormatter {
+    /// Initializes the OutputFormater to default values
+    fn new(pattern: &str) -> OutputFormatter {
         OutputFormatter {
             ignore_match: false,
             has_line_numbers: false,
             with_file_name: false,
             only_file_names: false,
             only_line_count: false,
-            pattern: String::from(""),
+            pattern: String::from(pattern),
         }
     }
 }
-/**
- * Read the command line arguments and parse them into the OutputFormatter
- * structure. Return input files in a vector.
- */
-fn read_arguments() -> (OutputFormatter, Vec<String>) {
-    let mut output_formatter = OutputFormatter::new();
 
+/// Read the command line arguments and parse them into the OutputFormatter
+/// structure. Return input files in a vector.
+fn read_arguments() -> (OutputFormatter, Vec<String>) {
     let matches = App::new("grep: grep clone command written in Rust")
         .version(VERSION)
         .author("Manuel Berrocal")
@@ -104,6 +102,9 @@ fn read_arguments() -> (OutputFormatter, Vec<String>) {
         )
         .get_matches();
 
+    // unwrap is safe as the pattern argument is required
+    let mut output_formatter = OutputFormatter::new(matches.value_of("pattern").unwrap());
+
     if matches.is_present("ignore_match") {
         output_formatter.ignore_match = true;
     }
@@ -123,8 +124,6 @@ fn read_arguments() -> (OutputFormatter, Vec<String>) {
     if matches.is_present("only_line_count") {
         output_formatter.only_line_count = true;
     }
-    // unwrap is safe as the pattern argument is required
-    output_formatter.pattern = String::from(matches.value_of("pattern").unwrap());
 
     let mut inputs = Vec::with_capacity(1);
 
@@ -145,15 +144,19 @@ fn read_arguments() -> (OutputFormatter, Vec<String>) {
     (output_formatter, inputs)
 }
 
-/**
- * Find match in file
- *
- * Return true if buffer content matches the regular expression.
- * Return false if buffer content matches the regular expression and -v
- * flag.
- *
- * Performs a quick match using is_match method for performance.
- */
+/// Find match in buffer
+///
+/// Performs a quick match using is_match method for performance.
+///
+/// # Arguments
+/// * `reader` - A `BufRead` containing the text to match.
+/// * `re` - A RegEx object containing the regular expression
+/// * `ignore_match` - a bool that inverts the matching logic. When `ignore_match`
+///    is true returns the files that do not include a match.
+///
+/// # Return
+/// * Return true if buffer content matches the regular expression.
+/// * Return false if buffer content matches the regular expression and -v flag.
 fn find_match<T: BufRead + Sized>(
     reader: T,
     re: &Regex,
@@ -169,13 +172,15 @@ fn find_match<T: BufRead + Sized>(
     return Ok(!found);
 }
 
-/**
- * Finds the files in the input list matching the regex.
- *
- * If the standard input is searched, a pathname of "(standard input)" is written
- *
- * Returns a vector with the file names matching.
- */
+/// Returns a vector with the file names matching the regular expression
+///
+/// # Arguments
+/// * `inputs` - A vector of strings containing the path to the files
+/// * `re` - The `Regex` object with the regular expression to match
+/// * `ignore_match` - a bool that inverts the matching logic.  When `ignore_match`
+///    is true returns the files that do not include a match.
+///
+/// If the standard input is searched, a pathname of "(standard input)" is written.
 fn find_matching_files(
     inputs: &Vec<String>,
     re: &Regex,
@@ -211,11 +216,18 @@ fn find_matching_files(
     Ok(matching_files)
 }
 
-/**
- * Gets a line buffer and a regular expression and
- * returns the lines in the buffer that match the
- * regular expression.
- */
+/// Returns the lines in the buffer that match the regular expression.
+///
+/// # Arguments
+/// * `reader` - A `BufRead` containing the text to match.
+/// * `re` - A RegEx object containing the regular expression
+/// * `ignore_match` - a bool that inverts the matching logic. When `ignore_match`
+///    is true returns the files that do not include a match.
+///
+/// # Returns
+/// Returns a vector of tupples,
+/// * `line number` : usize
+/// * `line text` : String
 fn match_lines<T: BufRead + Sized>(
     reader: T,
     re: &Regex,
