@@ -127,6 +127,37 @@ fn read_arguments() -> (OutputFormatter, Vec<String>) {
     (output_formatter, inputs)
 }
 
+/// Returns a string with the formated line
+///
+/// # Arguments
+///
+/// * `line` - String to be formatted
+/// * `line_number` - u32 the line number to append to the line
+/// * `output_formatter` - OutputFormatter structure containing the formatting parameters
+///
+/// Appends a number to the line if the -n switch was passed in the command line arguments.
+/// Ignores blank lines if -b switch was passsed in the command line arguments.
+///
+fn format_output_line(
+    line: &String,
+    line_number: u32,
+    output_formatter: &OutputFormatter,
+) -> String {
+    let is_blank = line == "";
+    let formated_line = format!(
+        "{}{}",
+        if is_blank & output_formatter.only_non_blank {
+            format!("{:<5}:", String::from(""))
+        } else if output_formatter.has_line_numbers {
+            format!("{:<5}: ", line_number)
+        } else {
+            String::from("")
+        },
+        line
+    );
+    String::from(formated_line.trim_end())
+}
+
 fn main() {
     let (output_formatter, inputs) = read_arguments();
 
@@ -141,6 +172,7 @@ fn main() {
     let mut next_line_number = 0u32;
     let stdout = io::stdout();
     let mut handle = io::BufWriter::new(stdout);
+
     for file_path in &file_paths {
         let lines = match File::open(&file_path) {
             Err(err_code) => {
@@ -174,15 +206,8 @@ fn main() {
 
                 match writeln!(
                     handle,
-                    "{}{}",
-                    if is_blank & output_formatter.only_non_blank {
-                        format!("{:<5}: ", String::from(""))
-                    } else if output_formatter.has_line_numbers {
-                        format!("{:<5}: ", next_line_number)
-                    } else {
-                        String::from("")
-                    },
-                    ok_line
+                    "{}",
+                    format_output_line(&ok_line, next_line_number, &output_formatter)
                 ) {
                     Ok(_) => {}
                     Err(err) => {
@@ -201,3 +226,46 @@ fn main() {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_output_line() {
+        let input_string = String::from("my test string");
+        let mut output_formatter = OutputFormatter::new();
+
+        // No processing - input matches output
+        assert_eq!(
+            input_string,
+            format_output_line(&input_string, 0, &output_formatter)
+        );
+
+        // Add line number
+        let string_with_number = String::from("12   : my test string");
+        output_formatter.has_line_numbers = true;
+        assert_eq!(
+            string_with_number,
+            format_output_line(&input_string, 12, &output_formatter)
+        );
+
+        // Add line number to empty line
+        let empty_string_with_number = String::from("13   :");
+        output_formatter.has_line_numbers = true;
+        assert_eq!(
+            empty_string_with_number,
+            format_output_line(&String::from(""), 13, &output_formatter)
+        );
+
+        // Ignore empty lines
+        let empty_string = String::from("");
+        let empty_string_no_number = String::from("     :");
+        output_formatter.only_non_blank = true;
+        output_formatter.has_line_numbers = true;
+        assert_eq!(
+            empty_string_no_number,
+            format_output_line(&empty_string, 14, &output_formatter)
+        );
+    }
+} // mod tests
