@@ -26,6 +26,8 @@
 */
 use clap::{App, Arg};
 
+use std::env;
+use std::ffi::OsString;
 use std::fs::File;
 use std::io::{self, BufRead, Write};
 use std::process;
@@ -58,7 +60,11 @@ impl OutputFormatter {
 
 /// Read the command line arguments and parse them into the OutputFormatter
 /// structure.
-fn read_arguments() -> OutputFormatter {
+fn read_arguments<I, T>(itr: I) -> OutputFormatter
+where
+    I: IntoIterator<Item = T>,
+    T: Into<OsString> + Clone,
+{
     let mut output_formatter = OutputFormatter::new();
     let matches = App::new("rcat: cat clone command written in Rust")
         .version(VERSION)
@@ -99,7 +105,7 @@ fn read_arguments() -> OutputFormatter {
                 .takes_value(true)
                 .multiple(true),
         )
-        .get_matches();
+        .get_matches_from(itr);
 
     if matches.is_present("number") {
         output_formatter.has_line_numbers = true;
@@ -160,7 +166,7 @@ fn format_output_line(
 }
 
 fn main() {
-    let output_formatter = read_arguments();
+    let output_formatter = read_arguments(env::args_os());
 
     let file_paths =
         match toolslib::get_file_paths(&output_formatter.inputs, output_formatter.ignore_errors) {

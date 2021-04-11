@@ -8,6 +8,8 @@
  */
 use clap::{App, Arg};
 use regex::Regex;
+use std::env;
+use std::ffi::OsString;
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
@@ -53,7 +55,11 @@ impl OutputFormatter {
 
 /// Read the command line arguments and parse them into the OutputFormatter
 /// structure. Return input files in a vector.
-fn read_arguments() -> OutputFormatter {
+fn read_arguments<I, T>(itr: I) -> OutputFormatter
+where
+    I: IntoIterator<Item = T>,
+    T: Into<OsString> + Clone,
+{
     let matches = App::new("grep: grep clone command written in Rust")
         .version(VERSION)
         .author("Manuel Berrocal")
@@ -102,7 +108,7 @@ fn read_arguments() -> OutputFormatter {
                 .takes_value(true)
                 .multiple(true),
         )
-        .get_matches();
+        .get_matches_from(itr);
 
     // unwrap is safe as the pattern argument is required
     let mut output_formatter = OutputFormatter::new(matches.value_of("pattern").unwrap());
@@ -246,7 +252,7 @@ fn match_lines<T: BufRead + Sized>(
 }
 
 fn main() {
-    let output_formatter = read_arguments();
+    let output_formatter = read_arguments(env::args_os());
     let re = match Regex::new(output_formatter.pattern.as_str()) {
         Ok(m) => m,
         Err(_) => {
