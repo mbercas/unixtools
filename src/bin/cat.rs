@@ -40,6 +40,7 @@ struct OutputFormatter {
     only_non_blank: bool,
     squeze_blank: bool,
     ignore_errors: bool,
+    inputs: Vec<String>,
 }
 
 impl OutputFormatter {
@@ -50,13 +51,14 @@ impl OutputFormatter {
             only_non_blank: false,
             squeze_blank: false,
             ignore_errors: false,
+            inputs: Vec::new(),
         }
     }
 }
 
 /// Read the command line arguments and parse them into the OutputFormatter
-/// structure. Return input files in a vector.
-fn read_arguments() -> (OutputFormatter, Vec<String>) {
+/// structure.
+fn read_arguments() -> OutputFormatter {
     let mut output_formatter = OutputFormatter::new();
     let matches = App::new("rcat: cat clone command written in Rust")
         .version(VERSION)
@@ -116,15 +118,14 @@ fn read_arguments() -> (OutputFormatter, Vec<String>) {
         output_formatter.ignore_errors = true;
     }
 
-    //(output_formatter, inputs)
     // This is only safe because the argument is required.
-    let mut inputs = Vec::new();
+
     let tmp: Vec<_> = matches.values_of("inputs").unwrap().collect();
     for file_name in tmp {
-        inputs.push(file_name.to_string())
+        output_formatter.inputs.push(file_name.to_string());
     }
 
-    (output_formatter, inputs)
+    output_formatter
 }
 
 /// Returns a string with the formated line
@@ -159,14 +160,15 @@ fn format_output_line(
 }
 
 fn main() {
-    let (output_formatter, inputs) = read_arguments();
+    let output_formatter = read_arguments();
 
-    let file_paths = match toolslib::get_file_paths(&inputs, output_formatter.ignore_errors) {
-        Ok(file_paths) => file_paths,
-        Err(rc) => {
-            process::exit(rc as i32);
-        }
-    };
+    let file_paths =
+        match toolslib::get_file_paths(&output_formatter.inputs, output_formatter.ignore_errors) {
+            Ok(file_paths) => file_paths,
+            Err(rc) => {
+                process::exit(rc as i32);
+            }
+        };
 
     // For every file read the contents
     let mut next_line_number = 0u32;

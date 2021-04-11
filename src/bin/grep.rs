@@ -33,6 +33,7 @@ struct OutputFormatter {
     only_file_names: bool,
     only_line_count: bool,
     pattern: String,
+    inputs: Vec<String>,
 }
 
 impl OutputFormatter {
@@ -45,13 +46,14 @@ impl OutputFormatter {
             only_file_names: false,
             only_line_count: false,
             pattern: String::from(pattern),
+            inputs: Vec::new(),
         }
     }
 }
 
 /// Read the command line arguments and parse them into the OutputFormatter
 /// structure. Return input files in a vector.
-fn read_arguments() -> (OutputFormatter, Vec<String>) {
+fn read_arguments() -> OutputFormatter {
     let matches = App::new("grep: grep clone command written in Rust")
         .version(VERSION)
         .author("Manuel Berrocal")
@@ -125,23 +127,21 @@ fn read_arguments() -> (OutputFormatter, Vec<String>) {
         output_formatter.only_line_count = true;
     }
 
-    let mut inputs = Vec::with_capacity(1);
-
     if matches.is_present("inputs") {
         let vals: Vec<&str> = matches.values_of("inputs").unwrap().collect();
 
-        if vals.len() > inputs.capacity() {
-            inputs.reserve(vals.len())
+        if vals.len() > output_formatter.inputs.capacity() {
+            output_formatter.inputs.reserve(vals.len())
         }
 
         for file_name in vals {
-            inputs.push(file_name.to_string())
+            output_formatter.inputs.push(file_name.to_string())
         }
     } else {
-        inputs.push(String::from("-"));
+        output_formatter.inputs.push(String::from("-"));
     }
 
-    (output_formatter, inputs)
+    output_formatter
 }
 
 /// Find match in buffer
@@ -246,7 +246,7 @@ fn match_lines<T: BufRead + Sized>(
 }
 
 fn main() {
-    let (output_formatter, inputs) = read_arguments();
+    let output_formatter = read_arguments();
     let re = match Regex::new(output_formatter.pattern.as_str()) {
         Ok(m) => m,
         Err(_) => {
@@ -260,7 +260,7 @@ fn main() {
 
     // Fast implementation for finding files that match the expression
     if output_formatter.only_file_names {
-        match find_matching_files(&inputs, &re, output_formatter.ignore_match) {
+        match find_matching_files(&output_formatter.inputs, &re, output_formatter.ignore_match) {
             Ok(matched_files) => {
                 for file_name in matched_files {
                     println!("{}", file_name.as_str());
@@ -276,7 +276,7 @@ fn main() {
 
     // More complex implementation for finding lines that match the expression
     let mut line_count: usize = 0;
-    for input_file in &inputs {
+    for input_file in &output_formatter.inputs {
         // line number, line
         let mut lines: Vec<(usize, String)> = Vec::new();
         let current_file: String;
