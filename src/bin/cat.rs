@@ -276,4 +276,66 @@ mod tests {
             format_output_line(&empty_string, 14, &output_formatter)
         );
     }
+
+    #[test]
+    fn test_output_formatter_new() {
+        let of = OutputFormatter::new();
+        assert_eq!(false, of.only_non_blank);
+        assert_eq!(false, of.has_line_numbers);
+        assert_eq!(false, of.ignore_errors);
+        assert_eq!(false, of.squeze_blank);
+        assert_eq!(0usize, of.inputs.len());
+    }
+
+    #[test]
+    fn test_read_arguments() {
+        // read inputs into vector
+        let inputs = vec!["cat", "f1", "f2", "f3"];
+        let mut of = read_arguments(&inputs);
+        assert_eq!(inputs.len() - 1, of.inputs.len());
+        assert_eq!(false, of.only_non_blank);
+        assert_eq!(false, of.has_line_numbers);
+        assert_eq!(false, of.ignore_errors);
+        assert_eq!(false, of.squeze_blank);
+
+        // turn on numbers lines
+        of = read_arguments(vec!["cat", "-n", "f1", "f2", "f3"]);
+        assert_eq!(inputs.len() - 1, of.inputs.len());
+        assert_eq!(true, of.has_line_numbers);
+        assert_eq!(false, of.only_non_blank);
+        assert_eq!(false, of.ignore_errors);
+        assert_eq!(false, of.squeze_blank);
+
+        // turn on squeze blank lines
+        of = read_arguments(vec!["cat", "-s", "f1", "f2", "f3"]);
+        assert_eq!(inputs.len() - 1, of.inputs.len());
+        assert_eq!(false, of.has_line_numbers);
+        assert_eq!(false, of.only_non_blank);
+        assert_eq!(false, of.ignore_errors);
+        assert_eq!(true, of.squeze_blank);
+
+        // turn on ignore errors
+        of = read_arguments(vec!["cat", "-i", "f1", "f2", "f3"]);
+        assert_eq!(inputs.len() - 1, of.inputs.len());
+        assert_eq!(false, of.has_line_numbers);
+        assert_eq!(false, of.only_non_blank);
+        assert_eq!(true, of.ignore_errors);
+        assert_eq!(false, of.squeze_blank);
+
+        // turn on only number only non blank
+        of = read_arguments(vec!["cat", "-b", "f1", "f2", "f3"]);
+        assert_eq!(inputs.len() - 1, of.inputs.len());
+        assert_eq!(true, of.has_line_numbers);
+        assert_eq!(true, of.only_non_blank);
+        assert_eq!(false, of.ignore_errors);
+        assert_eq!(false, of.squeze_blank);
+
+        // turn on all flags
+        of = read_arguments(vec!["cat", "-n", "-s", "-i", "-b", "f1", "f2", "f3"]);
+        assert_eq!(inputs.len() - 1, of.inputs.len());
+        assert_eq!(true, of.has_line_numbers);
+        assert_eq!(true, of.only_non_blank);
+        assert_eq!(true, of.ignore_errors);
+        assert_eq!(true, of.squeze_blank);
+    }
 } // mod tests
