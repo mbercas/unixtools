@@ -33,6 +33,7 @@ use std::io::{self, BufRead, Write};
 use std::process;
 
 extern crate toolslib;
+use crate::toolslib::{get_file_paths, ErrCode};
 
 const VERSION: &str = "ver. 0.0.2";
 
@@ -168,13 +169,13 @@ fn format_output_line(
 fn main() {
     let output_formatter = read_arguments(env::args_os());
 
-    let file_paths =
-        match toolslib::get_file_paths(&output_formatter.inputs, output_formatter.ignore_errors) {
-            Ok(file_paths) => file_paths,
-            Err(rc) => {
-                process::exit(rc as i32);
-            }
-        };
+    let file_paths = match get_file_paths(&output_formatter.inputs, output_formatter.ignore_errors)
+    {
+        Ok(file_paths) => file_paths,
+        Err(rc) => {
+            process::exit(rc as i32);
+        }
+    };
 
     // For every file read the contents
     let mut next_line_number = 0u32;
@@ -192,7 +193,7 @@ fn main() {
                 if output_formatter.ignore_errors {
                     continue;
                 } else {
-                    process::exit(toolslib::Rc::ErrorCannotOpenFileForReading as i32);
+                    process::exit(ErrCode::ErrorCannotOpenFileForReading as i32);
                 }
             }
             Ok(file) => io::BufReader::new(file).lines(),
@@ -220,7 +221,7 @@ fn main() {
                     Ok(_) => {}
                     Err(err) => {
                         eprintln!("Error {}; when writing to stdout buffer.", err);
-                        process::exit(toolslib::Rc::ErrorWriteToStdout as i32);
+                        process::exit(ErrCode::ErrorWriteToStdout as i32);
                     }
                 }
             }
@@ -228,7 +229,7 @@ fn main() {
                 Ok(_) => {}
                 Err(err) => {
                     eprintln!("Error {}; when flushing to stdout.", err);
-                    process::exit(toolslib::Rc::ErrorWriteToStdout as i32);
+                    process::exit(ErrCode::ErrorWriteToStdout as i32);
                 }
             }
         }

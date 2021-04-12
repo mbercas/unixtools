@@ -16,16 +16,10 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::process;
 
-/**
- *
- */
+extern crate toolslib;
+use crate::toolslib::ErrCode;
 
 const VERSION: &str = "ver. 0.0.1";
-
-enum GrepError {
-    InvalidRegularExpression = 1,
-    InputFileNotFound = 2,
-}
 
 // A structure that defines how the output is formatted.
 struct OutputFormatter {
@@ -167,7 +161,7 @@ fn find_match<T: BufRead + Sized>(
     reader: T,
     re: &Regex,
     ignore_match: bool,
-) -> Result<bool, GrepError> {
+) -> Result<bool, ErrCode> {
     let found = if ignore_match { false } else { true };
     for line_ in reader.lines() {
         let line = line_.unwrap();
@@ -191,7 +185,7 @@ fn find_matching_files(
     inputs: &Vec<String>,
     re: &Regex,
     ignore_match: bool,
-) -> Result<Vec<String>, GrepError> {
+) -> Result<Vec<String>, ErrCode> {
     let mut matching_files: Vec<String> = Vec::new();
 
     for input_file in inputs {
@@ -238,7 +232,7 @@ fn match_lines<T: BufRead + Sized>(
     reader: T,
     re: &Regex,
     ignore_match: bool,
-) -> Result<Vec<(usize, String)>, GrepError> {
+) -> Result<Vec<(usize, String)>, ErrCode> {
     let mut matched_lines = Vec::new();
     for (i, line_) in reader.lines().enumerate() {
         let line = line_.unwrap();
@@ -260,7 +254,7 @@ fn main() {
                 "Error: {} is not a valid regular expression",
                 output_formatter.pattern.as_str()
             );
-            process::exit(GrepError::InvalidRegularExpression as i32);
+            process::exit(ErrCode::InvalidRegularExpression as i32);
         }
     };
 

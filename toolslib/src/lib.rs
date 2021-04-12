@@ -5,13 +5,15 @@ use std::path::Path;
 
 /// Exit codes, note that Process::exit requires i32 as argument
 #[derive(PartialEq, Debug)]
-pub enum Rc {
+pub enum ErrCode {
     /// Invalid file path error
     ErrorInvalidIinputFilePath = 1,
     /// The file can not be open for reading
     ErrorCannotOpenFileForReading = 2,
     /// Error writing to standard output
     ErrorWriteToStdout = 3,
+    /// Error creating regular expression
+    InvalidRegularExpression = 30,
 }
 
 /// Gets a vector of strings as an input argument and returns an array of valid  Paths.
@@ -25,14 +27,14 @@ pub enum Rc {
 /// to invalid paths, prints an error message is stderr and continues parsing
 /// arguments. If `ignore_errors` is set to false returns error if any string
 /// corresponds to an invalid path.
-pub fn get_file_paths(inputs: &Vec<String>, ignore_errors: bool) -> Result<Vec<&Path>, Rc> {
+pub fn get_file_paths(inputs: &Vec<String>, ignore_errors: bool) -> Result<Vec<&Path>, ErrCode> {
     let mut file_paths = Vec::new();
     for file_name in inputs {
         let path = Path::new(file_name.as_str());
         if !path.exists() {
             eprintln!("ERROR: file: `{}` does not exist", path.display());
             if !ignore_errors {
-                return Err(Rc::ErrorInvalidIinputFilePath);
+                return Err(ErrCode::ErrorInvalidIinputFilePath);
             }
         } else {
             file_paths.push(path);

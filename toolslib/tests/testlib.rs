@@ -9,14 +9,14 @@ fn test_get_file_paths_invalid_path() {
     // test for invalid paths -> return err
     match get_file_paths(&inputs, ignore_errors_is_false) {
         Ok(_) => {}
-        Err(err) => assert_eq!(err, Rc::ErrorInvalidIinputFilePath),
+        Err(err) => assert_eq!(err, ErrCode::ErrorInvalidIinputFilePath),
     }
 
     // input vector of paths is empty -> return err
     let empty_inputs: Vec<String> = Vec::new();
     match get_file_paths(&empty_inputs, ignore_errors_is_false) {
         Ok(_) => {}
-        Err(err) => assert_eq!(err, Rc::ErrorInvalidIinputFilePath),
+        Err(err) => assert_eq!(err, ErrCode::ErrorInvalidIinputFilePath),
     }
 
     // test for invalid paths ignore error -> return Ok with empty vector
