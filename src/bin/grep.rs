@@ -339,3 +339,21 @@ fn main() {
         println!("{}", line_count);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_output_formatter_new() {
+        let pattern = "the pattern";
+        let of = OutputFormatter::new(pattern);
+        assert_eq!(false, of.ignore_match);
+        assert_eq!(false, of.has_line_numbers);
+        assert_eq!(false, of.with_file_name);
+        assert_eq!(false, of.only_file_names);
+        assert_eq!(false, of.only_line_count);
+        assert_eq!(pattern, of.pattern);
+        assert_eq!(0usize, of.inputs.len());
+    }
+}
