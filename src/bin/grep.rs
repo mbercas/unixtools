@@ -417,15 +417,32 @@ mod grep_ts {
     }
 
     #[test]
-    fn ts_find_match() {
+    fn ts_find_match_regex_matches() {
         let re = Regex::new("lorem").unwrap();
-        let reader = io::Cursor::new(b"lorem\nipsum\r\ndolor");
         let ignore_match = true;
         let dont_ignore_match = false;
 
-        assert_eq!(false, find_match(reader, &re, ignore_match).unwrap());
-
+        // regext matches, don't ignore match
         let reader = io::Cursor::new(b"lorem\nipsum\r\ndolor");
         assert_eq!(true, find_match(reader, &re, dont_ignore_match).unwrap());
+
+        // regex matches and but ignore match
+        let reader = io::Cursor::new(b"lorem\nipsum\r\ndolor");
+        assert_eq!(false, find_match(reader, &re, ignore_match).unwrap());
+    }
+
+    #[test]
+    fn ts_find_match_regex_does_not_match() {
+        let re = Regex::new("general").unwrap();
+        let ignore_match = true;
+        let dont_ignore_match = false;
+
+        // regex does not match
+        let reader = io::Cursor::new(b"lorem\nipsum\r\ndolor");
+        assert_eq!(false, find_match(reader, &re, dont_ignore_match).unwrap());
+
+        // regex does not match and ignore match
+        let reader = io::Cursor::new(b"lorem\nipsum\r\ndolor");
+        assert_eq!(true, find_match(reader, &re, ignore_match).unwrap());
     }
 } // mod grep_ts
