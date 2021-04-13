@@ -471,6 +471,7 @@ mod grep_ts {
         assert_eq!("dolor", m[1].1);
     }
 
+    #[test]
     fn ts_match_lines_without_match() {
         let re = Regex::new("garbage").unwrap();
         let ignore_match = true;
@@ -481,5 +482,11 @@ mod grep_ts {
         let m = match_lines(reader, &re, dont_ignore_match).unwrap();
 
         assert_eq!(0usize, m.len());
+
+        // regext does not match but ignore
+        let reader = io::Cursor::new(b"lorem\nipsum is second line\r\ndolor");
+        let m = match_lines(reader, &re, ignore_match).unwrap();
+
+        assert_eq!(3usize, m.len());
     }
 } // mod grep_ts
