@@ -1,5 +1,5 @@
-///
 /// A grep clone written in Rust
+///
 /*
  * https://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html
  * https://livebook.manning.com/book/rust-in-action/chapter-2/v-16/371
@@ -21,7 +21,7 @@ use crate::toolslib::ErrCode;
 
 const VERSION: &str = "ver. 0.0.1";
 
-// A structure that defines how the output is formatted.
+/// A structure that stores the parsed flags from command line and input files.
 struct OutputFormatter {
     ignore_match: bool,
     has_line_numbers: bool,
@@ -237,9 +237,9 @@ fn match_lines<T: BufRead + Sized>(
     for (i, line_) in reader.lines().enumerate() {
         let line = line_.unwrap();
         if ignore_match && (!re.is_match(line.as_str())) {
-            matched_lines.push((i, line));
+            matched_lines.push((i + 1, line));
         } else if (!ignore_match) && re.is_match(line.as_str()) {
-            matched_lines.push((i, line));
+            matched_lines.push((i + 1, line));
         }
     }
     Ok(matched_lines)
@@ -417,7 +417,7 @@ mod grep_ts {
     }
 
     #[test]
-    fn ts_find_match_regex_matches() {
+    fn ts_find_match_regex_with_match() {
         let re = Regex::new("lorem").unwrap();
         let ignore_match = true;
         let dont_ignore_match = false;
@@ -432,7 +432,7 @@ mod grep_ts {
     }
 
     #[test]
-    fn ts_find_match_regex_does_not_match() {
+    fn ts_find_match_regex_without_match() {
         let re = Regex::new("general").unwrap();
         let ignore_match = true;
         let dont_ignore_match = false;
@@ -444,5 +444,30 @@ mod grep_ts {
         // regex does not match and ignore match
         let reader = io::Cursor::new(b"lorem\nipsum\r\ndolor");
         assert_eq!(true, find_match(reader, &re, ignore_match).unwrap());
+    }
+
+    #[test]
+    fn ts_match_lines_with_match() {
+        let re = Regex::new("ipsum").unwrap();
+        let ignore_match = true;
+        let dont_ignore_match = false;
+
+        // regext matches, don't ignore match
+        let reader = io::Cursor::new(b"lorem\nipsum is second line\r\ndolor");
+        let m = match_lines(reader, &re, dont_ignore_match).unwrap();
+
+        assert_eq!(1usize, m.len());
+        assert_eq!(2, m[0].0);
+        assert_eq!("ipsum is second line", m[0].1);
+
+        // regext matches, don't ignore match
+        let reader = io::Cursor::new(b"lorem\nipsum is sencond line\r\ndolor");
+        let m = match_lines(reader, &re, ignore_match).unwrap();
+
+        assert_eq!(2usize, m.len());
+        assert_eq!(1, m[0].0);
+        assert_eq!("lorem", m[0].1);
+        assert_eq!(3, m[1].0);
+        assert_eq!("dolor", m[1].1);
     }
 } // mod grep_ts
