@@ -460,7 +460,7 @@ mod grep_ts {
         assert_eq!(2, m[0].0);
         assert_eq!("ipsum is second line", m[0].1);
 
-        // regext matches, don't ignore match
+        // regext matches, but ignore match
         let reader = io::Cursor::new(b"lorem\nipsum is sencond line\r\ndolor");
         let m = match_lines(reader, &re, ignore_match).unwrap();
 
@@ -469,5 +469,17 @@ mod grep_ts {
         assert_eq!("lorem", m[0].1);
         assert_eq!(3, m[1].0);
         assert_eq!("dolor", m[1].1);
+    }
+
+    fn ts_match_lines_without_match() {
+        let re = Regex::new("garbage").unwrap();
+        let ignore_match = true;
+        let dont_ignore_match = false;
+
+        // regext does not match
+        let reader = io::Cursor::new(b"lorem\nipsum is second line\r\ndolor");
+        let m = match_lines(reader, &re, dont_ignore_match).unwrap();
+
+        assert_eq!(0usize, m.len());
     }
 } // mod grep_ts
