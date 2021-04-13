@@ -341,11 +341,12 @@ fn main() {
 }
 
 #[cfg(test)]
-mod tests {
+mod grep_ts {
     use super::*;
+    use std::io;
 
     #[test]
-    fn test_output_formatter_new() {
+    fn ts_output_formatter_new() {
         let pattern = "the pattern";
         let of = OutputFormatter::new(pattern);
         assert_eq!(false, of.ignore_match);
@@ -356,4 +357,75 @@ mod tests {
         assert_eq!(pattern, of.pattern);
         assert_eq!(0usize, of.inputs.len());
     }
-}
+
+    #[test]
+    fn ts_read_arguments() {
+        let pattern = "the pattern";
+        // load the pattern and stdin
+        let of = read_arguments(vec!["grep", "-e", "the pattern"]);
+
+        assert_eq!(false, of.ignore_match);
+        assert_eq!(false, of.has_line_numbers);
+        assert_eq!(false, of.with_file_name);
+        assert_eq!(false, of.only_file_names);
+        assert_eq!(false, of.only_line_count);
+        assert_eq!(pattern, of.pattern);
+        assert_eq!(1usize, of.inputs.len());
+        assert_eq!("-", of.inputs[0]);
+
+        // load input files
+        let of = read_arguments(vec!["grep", "-e", "the pattern", "f1", "f2", "f3"]);
+
+        assert_eq!(false, of.ignore_match);
+        assert_eq!(false, of.has_line_numbers);
+        assert_eq!(false, of.with_file_name);
+        assert_eq!(false, of.only_file_names);
+        assert_eq!(false, of.only_line_count);
+        assert_eq!(pattern, of.pattern);
+        assert_eq!(3usize, of.inputs.len());
+
+        for i in 0..of.inputs.len() {
+            assert_eq!(format!("f{}", i + 1), of.inputs[i]);
+        }
+
+        // check all flags
+        let of = read_arguments(vec![
+            "grep",
+            "-v",
+            "-n",
+            "-l",
+            "-c",
+            "-H",
+            "-e",
+            "the pattern",
+            "f1",
+            "f2",
+            "f3",
+        ]);
+
+        assert_eq!(true, of.ignore_match);
+        assert_eq!(true, of.has_line_numbers);
+        assert_eq!(true, of.with_file_name);
+        assert_eq!(true, of.only_file_names);
+        assert_eq!(true, of.only_line_count);
+        assert_eq!(pattern, of.pattern);
+        assert_eq!(3usize, of.inputs.len());
+
+        for i in 0..of.inputs.len() {
+            assert_eq!(format!("f{}", i + 1), of.inputs[i]);
+        }
+    }
+
+    #[test]
+    fn ts_find_match() {
+        let re = Regex::new("lorem").unwrap();
+        let reader = io::Cursor::new(b"lorem\nipsum\r\ndolor");
+        let ignore_match = true;
+        let dont_ignore_match = false;
+
+        assert_eq!(false, find_match(reader, &re, ignore_match).unwrap());
+
+        let reader = io::Cursor::new(b"lorem\nipsum\r\ndolor");
+        assert_eq!(true, find_match(reader, &re, dont_ignore_match).unwrap());
+    }
+} // mod grep_ts

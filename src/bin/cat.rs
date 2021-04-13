@@ -237,11 +237,11 @@ fn main() {
 }
 
 #[cfg(test)]
-mod tests {
+mod cat_ts {
     use super::*;
 
     #[test]
-    fn test_format_output_line() {
+    fn ts_format_output_line() {
         let input_string = String::from("my test string");
         let mut output_formatter = OutputFormatter::new();
 
@@ -279,7 +279,7 @@ mod tests {
     }
 
     #[test]
-    fn test_output_formatter_new() {
+    fn ts_output_formatter_new() {
         let of = OutputFormatter::new();
         assert_eq!(false, of.only_non_blank);
         assert_eq!(false, of.has_line_numbers);
@@ -289,7 +289,7 @@ mod tests {
     }
 
     #[test]
-    fn test_read_arguments() {
+    fn ts_read_arguments() {
         // read inputs into vector
         let inputs = vec!["cat", "f1", "f2", "f3"];
         let mut of = read_arguments(&inputs);
@@ -339,4 +339,4 @@ mod tests {
         assert_eq!(true, of.ignore_errors);
         assert_eq!(true, of.squeze_blank);
     }
-} // mod tests
+} // mod cat_ts
