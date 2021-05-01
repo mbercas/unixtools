@@ -13,3 +13,4 @@ edition = "2018"
 toolslib = { path = "toolslib" }
 clap = "2"
 regex = "1.4.5"
+procfs = "0.9.1"
