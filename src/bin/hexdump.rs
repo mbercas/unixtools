@@ -257,6 +257,28 @@ impl Formatter {
     }
 }
 
+
+/**
+  Returns the string that represents the characted passed as a byte.
+
+  - char_byte (u8): the byte to interpret
+  - scape_control_char (bool): scapes control chars with '\' if true.
+    Otherwise converts them to '.'
+*/
+fn get_char_string_rep(char_byte: &[u8], scape_control_char: bool) -> String {
+    let c = String::from_utf8_lossy(char_byte);
+    if (char_byte[0] as char).is_control() {
+        if scape_control_char {
+            c.escape_default().to_string()
+        } else {
+            String::from(".")
+        }
+    } else {
+        c.to_string()
+    }
+
+}
+
 impl Iterator for Formatter {
     type Item = String;
 
@@ -277,15 +299,8 @@ impl Iterator for Formatter {
                     }
                 } else if self.char_output {
                     for i in self.offset..end {
-                        let s: String;
-                        let c = String::from_utf8_lossy(&self.buf[i..i+1]);
-                        if (self.buf[i] as char).is_control() {
-                            s = c.escape_default().to_string();
-                        } else {
-                            s = c.to_string();
-                        }
-
-                        bytes = format!("{}{:>4}", bytes, s);
+                        // let s = get_char_string_rep(&self.buf[i..(i+1)], true);
+                        bytes = format!("{}{:>4}", bytes, get_char_string_rep(&self.buf[i..(i+1)], true));
                     }
                 } else {
                     for i in self.offset..end {
@@ -294,34 +309,18 @@ impl Iterator for Formatter {
                 }
             } else if self.cannonical {
                 ascci_str = format!("  |");
-                let rem =  end - self.offset;
-                if rem <= 8 {
-                    for i in self.offset..end {
-                        bytes = format!("{} {:02x}", bytes, self.buf[i]);
-                        if (self.buf[i] as char).is_control() {
-                            ascci_str = format!("{}{}", ascci_str,".");
-                        } else {
-                            ascci_str = format!("{}{}", ascci_str, String::from_utf8_lossy(&self.buf[i..i+1]));
-                        }
+
+                for i in self.offset..end {
+                    let extra_space = if i == 8 {
+                        " "
+                    } else {
+                        ""
                     };
-                } else {
-                    for i in self.offset..(self.offset+8) {
-                        bytes = format!("{} {:02x}", bytes, self.buf[i]);
-                        if (self.buf[i] as char).is_control() {
-                            ascci_str = format!("{}{}", ascci_str,".");
-                        } else {
-                            ascci_str = format!("{}{}", ascci_str, String::from_utf8_lossy(&self.buf[i..i+1]));
-                        }
-                    };
-                    bytes = format!("{} ", bytes);
-                    for i in (self.offset+8)..end {
-                        bytes = format!("{} {:02x}", bytes, self.buf[i]);
-                        if (self.buf[i] as char).is_control() {
-                            ascci_str = format!("{}{}", ascci_str,".");
-                        } else {
-                            ascci_str = format!("{}{}", ascci_str, String::from_utf8_lossy(&self.buf[i..i+1]));
-                        }
-                    };
+                    bytes = format!("{}{} {:02x}", bytes, extra_space, self.buf[i]);
+                    ascci_str = format!("{}{}",
+                                        ascci_str,
+                                        get_char_string_rep(&self.buf[i..(i+1)], false)
+                    );
                 }
                 ascci_str = format!("{}|", ascci_str);
             }
