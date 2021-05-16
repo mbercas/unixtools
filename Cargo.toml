@@ -14,3 +14,4 @@ toolslib = { path = "toolslib" }
 clap = "2"
 regex = "1.4.5"
 procfs = "0.9.1"
+users = "0.11.0"

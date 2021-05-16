@@ -12,6 +12,10 @@ pub enum ErrCode {
     ErrorCannotOpenFileForReading = 2,
     /// Error writing to standard output
     ErrorWriteToStdout = 3,
+    /// Error parsing arguments
+    ErrorArgumentParsing = 4,
+    /// Error missing input argument
+    ErrorMissingInputArgument = 5,
     /// Error creating regular expression
     InvalidRegularExpression = 30,
 }
@@ -29,15 +33,21 @@ pub enum ErrCode {
 /// corresponds to an invalid path.
 pub fn get_file_paths(inputs: &Vec<String>, ignore_errors: bool) -> Result<Vec<&Path>, ErrCode> {
     let mut file_paths = Vec::new();
+    file_paths.reserve(inputs.len() + 1);
+
     for file_name in inputs {
-        let path = Path::new(file_name.as_str());
-        if !path.exists() {
-            eprintln!("ERROR: file: `{}` does not exist", path.display());
-            if !ignore_errors {
-                return Err(ErrCode::ErrorInvalidIinputFilePath);
-            }
+        if "-" == file_name {
+            file_paths.push(Path::new("-"));
         } else {
-            file_paths.push(path);
+            let path = Path::new(file_name.as_str());
+            if !path.exists() {
+                eprintln!("ERROR: file: `{}` does not exist", path.display());
+                if !ignore_errors {
+                    return Err(ErrCode::ErrorInvalidIinputFilePath);
+                }
+            } else {
+                file_paths.push(path);
+            }
         }
     }
     Ok(file_paths)
