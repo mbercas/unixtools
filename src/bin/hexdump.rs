@@ -9,7 +9,7 @@ use std::{cmp, env};
 extern crate toolslib;
 use crate::toolslib::ErrCode;
 
-const VERSION: &str = "ver. 0.0.1";
+const VERSION: &str = "ver. 0.0.2";
 
 #[derive(Debug)]
 struct CommandLineOptions {
@@ -188,7 +188,14 @@ where
     } else if matches.is_present("cannonical") {
         cmd_options.two_bytes_hex = false;
         cmd_options.cannonical = true;
+    } else if matches.is_present("two_bytes_octal") {
+        cmd_options.two_bytes_hex = false;
+        cmd_options.two_bytes_octal = true;
+    } else if matches.is_present("two_bytes_decimal") {
+        cmd_options.two_bytes_hex = false;
+        cmd_options.two_bytes_decimal = true;
     }
+
 
     Ok(cmd_options)
 }
@@ -201,7 +208,7 @@ fn get_input(input_file_name: &String) -> Result<Vec<u8>, ErrCode> {
 }
 
 /**
- Given a buffer and a format implementes an iterator
+ Given a buffer and a format implements an iterator
  that returns formatted strings
 */
 #[derive(Debug)]
@@ -286,6 +293,7 @@ impl Iterator for Formatter {
         let mut output: String;
 
         output = format!("{:07x}", self.offset);
+
         if self.offset < self.buf.len() {
             let increment = cmp::min(self.buf.len() - self.offset, self.bytes_per_line);
             let end = self.offset + increment;
@@ -293,13 +301,15 @@ impl Iterator for Formatter {
             let mut bytes: String = String::from("");
 
             if self.one_byte_output {
+
+                /* one byte outputs */
+
                 if self.oct_output {
                     for i in self.offset..end {
                         bytes = format!("{} {:03o}", bytes, self.buf[i]);
                     }
                 } else if self.char_output {
                     for i in self.offset..end {
-                        // let s = get_char_string_rep(&self.buf[i..(i+1)], true);
                         bytes = format!("{}{:>4}", bytes, get_char_string_rep(&self.buf[i..(i+1)], true));
                     }
                 } else {
@@ -308,6 +318,8 @@ impl Iterator for Formatter {
                     }
                 }
             } else if self.cannonical {
+
+                /* cannonical */
                 ascci_str = format!("  |");
 
                 for i in self.offset..end {
@@ -323,6 +335,31 @@ impl Iterator for Formatter {
                     );
                 }
                 ascci_str = format!("{}|", ascci_str);
+            } else {
+
+                /* two bytes output */
+
+                let rem = end - self.offset;
+                if rem < 8 {
+                    if rem % 2 == 1 {
+                        self.buf.push(0)
+                    }
+                }
+
+                if self.hex_output {
+                    for i in (self.offset..end).step_by(2) {
+                        bytes = format!("{}  {:02x}{:02x}", bytes, self.buf[i+1], self.buf[i]);
+                    }
+                } else if self.oct_output {
+                    for i in (self.offset..end).step_by(2) {
+                        bytes = format!("{}  {:03}{:03}", bytes, self.buf[i+1], self.buf[i]);
+                    }
+                } else {
+                    for i in (self.offset..end).step_by(2) {
+                        bytes = format!("{}  {:05}", bytes, (self.buf[i+1] as u16)*256 + (self.buf[i] as u16));
+                    }
+                }
+                if rem % 2 == 1 { self.buf.pop(); }
             }
             self.offset += increment;
             output = format!("{} {}", output, bytes);
@@ -330,6 +367,9 @@ impl Iterator for Formatter {
                 output = format!("{:<57} {}", output, ascci_str);
             }
             Some(output)
+        } else if self.offset == self.buf.len() {
+            self.offset += 1;
+            Some(format!("{:07x}", self.buf.len()))
         } else {
             None
         }
@@ -468,7 +508,7 @@ mod hexdump_ts {
         expected_lines.push(String::from(
             "0000000  001 002 003 004 005 006 007 010 011",
         ));
-        expected_lines.push(String::from("00000009"));
+        expected_lines.push(String::from("0000009"));
 
         for (i, line) in fmt.enumerate() {
             assert_eq!(expected_lines[i], line, "line is: {}", line);
@@ -512,7 +552,7 @@ mod hexdump_ts {
         expected_lines.push(String::from(
             "0000000    B   C   D   E   F   G   H   I   J   K",
         ));
-        expected_lines.push(String::from("00000009"));
+        expected_lines.push(String::from("000000a"));
 
         for (i, line) in fmt.enumerate() {
             assert_eq!(expected_lines[i], line, "line is: {}", line);
@@ -533,7 +573,9 @@ mod hexdump_ts {
         expected_lines.push(String::from(
             format!("{:<57}   {}", "0000000  42 43 44 45 46 47 48 49  4a 4b", "|BCDEFGHIJK|")
         ));
-
+        expected_lines.push(String::from(
+            format!("{}", "000000a")
+        ));
         for (i, line) in fmt.enumerate() {
             assert_eq!(expected_lines[i], line, "line is: {}", line);
         }
@@ -543,8 +585,12 @@ mod hexdump_ts {
 
         // test one complete line
         let _ = expected_lines.pop();
+        let _ = expected_lines.pop();
         expected_lines.push(String::from(
             format!("{:<57}   {}", "0000000  42 43 44 45 46 47 48 49  4a 4b 4c 4d 4e 4f 50 51", "|BCDEFGHIJKLMNOPQ|")
+        ));
+        expected_lines.push(String::from(
+            format!("{}", "0000010")
         ));
         for (i, line) in fmt.enumerate() {
             assert_eq!(expected_lines[i], line, "line is: {}", line);
@@ -554,8 +600,54 @@ mod hexdump_ts {
         let buf: Vec<u8> = vec![66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 0x0a];
         let fmt = Formatter::new(buf, &cmd_options);
 
+        expected_lines.pop();
         expected_lines.push(String::from(
             format!("{:<57}   {}", "0000010  52 53 0a", "|RS.|")
+        ));
+        expected_lines.push(String::from(
+            format!("{}", "0000013")
+        ));
+
+        for (i, line) in fmt.enumerate() {
+            assert_eq!(expected_lines[i], line, "line is: {}", line);
+        }
+    }
+
+    #[test]
+    fn formatter_two_byte_decimal() {
+        let buf: Vec<u8> = vec![0, 1, 2, 0, 4, 0];
+        let mut cmd_options = CommandLineOptions::new();
+        cmd_options.two_bytes_decimal = true;
+        cmd_options.two_bytes_hex = false;
+        let fmt = Formatter::new(buf, &cmd_options);
+        let mut expected_lines: Vec<String> = Vec::new();
+
+
+        // test one incomplete line - even bytes
+        expected_lines.push(String::from(
+            format!("0000000   00256  00002  00004")
+        ));
+        expected_lines.push(String::from(
+            format!("0000006")
+        ));
+        for (i, line) in fmt.enumerate() {
+            assert_eq!(expected_lines[i], line, "line is: {}", line);
+        }
+
+
+
+        // test one incomplete line - odd bytes
+
+        let buf: Vec<u8> = vec![0, 1, 2, 0, 4, 0, 2];
+        let fmt = Formatter::new(buf, &cmd_options);
+
+        let _ = expected_lines.pop();
+        let _ = expected_lines.pop();
+        expected_lines.push(String::from(
+            format!("0000000   00256  00002  00004  00002")
+        ));
+        expected_lines.push(String::from(
+            format!("0000007")
         ));
         for (i, line) in fmt.enumerate() {
             assert_eq!(expected_lines[i], line, "line is: {}", line);
