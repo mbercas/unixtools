@@ -38,3 +38,8 @@ Use WriteBuf to optimize stdout performance.
    + add testing to github actions cargo test --all
 - use Cargo workspaces
 - implement github action
+
+## hexdump
+
+- Implement iterator struct for formatting the output. Ideally I would have used a generator, but this is still a experimental feature in Rust.
+- Use some advanced methods of the `char` type.
